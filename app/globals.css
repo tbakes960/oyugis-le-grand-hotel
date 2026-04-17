@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================
+ * OYUGIS LE GRAND HOTEL — Global Styles
+ * Palette: Navy #0A2F3C · Gold #D4AF37 · Teal #5BBFD9
+ * ===================================================== */
+
+/* Fonts are loaded via next/font in layout.jsx — no render-blocking @import needed */
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-body text-hotel-dark bg-hotel-surface;
+    font-size: 16px;
+    line-height: 1.65;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+    line-height: 1.2;
+  }
+
+  /* Slim gold scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #F4F7F9; }
+  ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 99px; }
+
+  ::selection { background: rgba(91,191,217,0.22); color: #0A2F3C; }
+
+  a { @apply transition-colors duration-200; }
+}
+
+@layer components {
+
+  /* ── Buttons ──────────────────────────────────────── */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-3.5 bg-sky-400 text-white font-semibold
+           text-xs tracking-[0.12em] uppercase rounded-xl
+           transition-all duration-300 shadow-sky
+           hover:bg-sky-500 hover:shadow-sky-hover hover:-translate-y-0.5
+           focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-3.5 font-semibold
+           text-xs tracking-[0.12em] uppercase rounded-xl
+           transition-all duration-300 shadow-gold
+           hover:shadow-gold-hover hover:-translate-y-0.5
+           focus:outline-none focus:ring-2 focus:ring-gold-400 focus:ring-offset-2;
+    background: linear-gradient(135deg, #D4AF37 0%, #E8C55A 50%, #D4AF37 100%);
+    color: #0A2F3C;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-3.5 border-2 border-white/70 text-white
+           font-semibold text-xs tracking-[0.12em] uppercase rounded-xl
+           transition-all duration-300 backdrop-blur-sm
+           hover:bg-white hover:text-hotel-dark hover:border-white;
+  }
+
+  .btn-outline-dark {
+    @apply inline-flex items-center justify-center gap-2
+           px-6 py-3.5 border-2 border-hotel-dark/70 text-hotel-dark
+           font-semibold text-xs tracking-[0.12em] uppercase rounded-xl
+           transition-all duration-300
+           hover:bg-hotel-dark hover:text-white hover:border-hotel-dark;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-4 py-2.5
+           text-sky-500 font-semibold text-sm rounded-xl
+           transition-all duration-200 hover:bg-sky-50 hover:text-sky-600;
+  }
+
+  /* ── Cards ────────────────────────────────────────── */
+  .card {
+    @apply bg-white rounded-2xl shadow-card overflow-hidden
+           transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1;
+  }
+
+  .card-flat {
+    @apply bg-white rounded-2xl border border-gray-100 overflow-hidden
+           transition-all duration-300 hover:border-sky-200 hover:shadow-card;
+  }
+
+  /* ── Section Headers ──────────────────────────────── */
+  .eyebrow {
+    @apply block text-xs font-semibold tracking-[0.25em] uppercase text-sky-500 mb-3;
+  }
+
+  .section-title {
+    @apply text-3xl md:text-4xl font-heading font-semibold text-hotel-dark leading-tight mb-4;
+  }
+
+  .section-desc {
+    @apply text-base text-hotel-muted font-light leading-relaxed max-w-xl mx-auto;
+  }
+
+  /* ── Gold accent divider ──────────────────────────── */
+  .gold-divider {
+    @apply w-14 h-[2px] mx-auto mb-6;
+    background: linear-gradient(90deg, #D4AF37, #E8C55A, #D4AF37);
+  }
+
+  /* ── Form Elements ────────────────────────────────── */
+  .form-label {
+    @apply block text-[11px] font-semibold tracking-widest uppercase text-hotel-muted mb-2;
+  }
+
+  .form-input {
+    @apply w-full px-4 py-3.5 border border-gray-200 rounded-xl text-hotel-dark text-sm
+           bg-white transition-all duration-200
+           focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100
+           placeholder:text-gray-300;
+  }
+
+  .form-select {
+    @apply w-full px-4 py-3.5 border border-gray-200 rounded-xl text-hotel-dark text-sm
+           bg-white appearance-none transition-all duration-200
+           focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100;
+  }
+
+  /* ── Page Hero ────────────────────────────────────── */
+  .page-hero {
+    @apply relative h-72 md:h-96 bg-hotel-dark flex items-center justify-center
+           text-center overflow-hidden;
+    margin-top: 80px;
+  }
+
+  .page-hero-overlay {
+    @apply absolute inset-0;
+    background: linear-gradient(
+      to bottom,
+      rgba(10,47,60,0.50) 0%,
+      rgba(10,47,60,0.35) 40%,
+      rgba(10,47,60,0.80) 100%
+    );
+  }
+
+  .page-hero::before {
+    content: '';
+    @apply absolute inset-0 opacity-[0.06];
+    background-image: radial-gradient(circle, #D4AF37 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .page-hero-content {
+    @apply relative z-10 text-white px-4;
+  }
+
+  /* ── Admin Table ──────────────────────────────────── */
+  .admin-table { @apply w-full text-sm; }
+
+  .admin-table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider
+           text-hotel-muted bg-gray-50 border-b border-gray-200;
+  }
+
+  .admin-table td {
+    @apply px-4 py-3.5 border-b border-gray-100 text-hotel-dark;
+  }
+
+  .admin-table tr:hover td { @apply bg-sky-50/40; }
+
+  /* ── Status Badges ────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+  .badge-green  { @apply bg-emerald-100 text-emerald-700; }
+  .badge-yellow { @apply bg-amber-100   text-amber-700;   }
+  .badge-red    { @apply bg-red-100     text-red-700;     }
+  .badge-blue   { @apply bg-sky-100     text-sky-700;     }
+  .badge-gray   { @apply bg-gray-100    text-gray-600;    }
+  .badge-gold   { @apply bg-gold-100    text-gold-700;    }
+
+  /* ── Stat Card ────────────────────────────────────── */
+  .stat-card {
+    @apply bg-white rounded-2xl p-6 shadow-card border border-gray-50
+           transition-all duration-300 hover:shadow-card-hover;
+  }
+
+  /* ── Section wrapper ──────────────────────────────── */
+  .section { @apply py-20; }
+
+  /* ── Luxury divider ornament ──────────────────────── */
+  .luxury-divider {
+    @apply flex items-center gap-4 justify-center my-8;
+  }
+  .luxury-divider::before,
+  .luxury-divider::after {
+    content: '';
+    @apply flex-1 h-px max-w-[120px];
+    background: linear-gradient(to right, transparent, rgba(212,175,55,0.45), transparent);
+  }
+
+  /* ── WhatsApp FAB ─────────────────────────────────── */
+  .whatsapp-btn {
+    @apply fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full
+           flex items-center justify-center shadow-xl
+           transition-all duration-300 hover:scale-110 hover:shadow-2xl;
+    background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  }
+}
+
+@layer utilities {
+  .text-balance  { text-wrap: balance; }
+  .text-pretty   { text-wrap: pretty; }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* Glass morphism */
+  .glass {
+    @apply backdrop-blur-md bg-white/10 border border-white/20;
+  }
+  .glass-dark {
+    @apply backdrop-blur-md bg-hotel-dark/70 border border-white/10;
+  }
+
+  /* Subtle shimmer for loading states */
+  .shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+    background-size: 400% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+  }
+}

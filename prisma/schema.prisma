@@ -1,0 +1,213 @@
+// =====================================================
+// Oyugis Le Grand Hotel — Prisma Schema
+// Local / Development: SQLite
+// Production: change provider to "postgresql" and restore
+//             @db.Text / @db.Decimal annotations
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── USER & AUTH ───────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      String   @default("GUEST")  // GUEST | STAFF | ADMIN
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings          Booking[]
+  orders            Order[]
+  tableReservations TableReservation[]
+}
+
+// ── ROOMS ─────────────────────────────────────────────
+
+model Room {
+  id            String   @id @default(cuid())
+  number        String   @unique
+  type          String   // STANDARD | DELUXE | TWIN | EXECUTIVE_SUITE | PRESIDENTIAL_SUITE
+  name          String
+  description   String
+  pricePerNight Float
+  capacity      Int      @default(2)
+  sizeSqm       Int
+  floor         Int      @default(1)
+  status        String   @default("AVAILABLE") // AVAILABLE | OCCUPIED | MAINTENANCE | CLEANING
+  amenities     String   @default("[]")        // JSON array
+  images        String   @default("[]")        // JSON array
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookings Booking[]
+}
+
+// ── BOOKINGS ──────────────────────────────────────────
+
+model Booking {
+  id              String    @id @default(cuid())
+  bookingRef      String    @unique @default(cuid())
+  roomId          String?
+  room            Room?     @relation(fields: [roomId], references: [id])
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id])
+  guestName       String
+  guestEmail      String
+  guestPhone      String
+  adults          Int       @default(1)
+  children        Int       @default(0)
+  checkIn         DateTime
+  checkOut        DateTime
+  nights          Int
+  totalAmount     Float
+  status          String    @default("PENDING")    // PENDING | CONFIRMED | CHECKED_IN | CHECKED_OUT | CANCELLED
+  paymentStatus   String    @default("UNPAID")     // UNPAID | PENDING | PAID | REFUNDED | FAILED
+  paymentMethod   String?                          // MPESA | CARD | CASH | BANK_TRANSFER
+  paymentRef      String?
+  mpesaCheckoutId String?
+  specialRequests String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ── RESTAURANT ────────────────────────────────────────
+
+model MenuCategory {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  icon      String?
+  sortOrder Int        @default(0)
+  isActive  Boolean    @default(true)
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id           String       @id @default(cuid())
+  categoryId   String
+  category     MenuCategory @relation(fields: [categoryId], references: [id])
+  name         String
+  description  String
+  price        Float
+  image        String?
+  isAvailable  Boolean      @default(true)
+  isVegetarian Boolean      @default(false)
+  isVegan      Boolean      @default(false)
+  isGlutenFree Boolean      @default(false)
+  isSpicy      Boolean      @default(false)
+  sortOrder    Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  orderItems OrderItem[]
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderRef    String      @unique @default(cuid())
+  userId      String?
+  user        User?       @relation(fields: [userId], references: [id])
+  guestName   String
+  tableNumber String?
+  roomNumber  String?
+  type        String      @default("DINE_IN") // DINE_IN | ROOM_SERVICE | TAKEAWAY
+  items       OrderItem[]
+  totalAmount Float
+  status      String      @default("PENDING") // PENDING | PREPARING | READY | DELIVERED | CANCELLED
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  unitPrice  Float
+  notes      String?
+}
+
+model TableReservation {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  guestName  String
+  guestEmail String
+  guestPhone String
+  tableSize  Int
+  date       DateTime
+  time       String
+  notes      String?
+  status     String   @default("PENDING")
+  createdAt  DateTime @default(now())
+}
+
+// ── CONFERENCES & EVENTS ──────────────────────────────
+
+model ConferenceBooking {
+  id             String   @id @default(cuid())
+  ref            String   @unique @default(cuid())
+  organizerName  String
+  email          String
+  phone          String
+  organization   String?
+  eventType      String
+  hallSize       String   // BOARDROOM | MEDIUM | LARGE | BALLROOM
+  attendees      Int
+  date           DateTime
+  startTime      String
+  endTime        String
+  cateringNeeded Boolean  @default(false)
+  cateringNotes  String?
+  equipment      String   @default("[]")  // JSON array
+  specialNeeds   String?
+  status         String   @default("PENDING")
+  totalQuote     Float?
+  createdAt      DateTime @default(now())
+}
+
+// ── BLOG ──────────────────────────────────────────────
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  title       String
+  excerpt     String
+  content     String
+  coverImage  String?
+  category    String
+  tags        String    @default("[]")  // JSON array
+  authorName  String
+  status      String    @default("DRAFT") // DRAFT | PUBLISHED
+  metaTitle   String?
+  metaDesc    String?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ── CONTACT MESSAGES ──────────────────────────────────
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
