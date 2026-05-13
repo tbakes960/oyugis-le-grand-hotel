@@ -64,6 +64,7 @@ model Booking {
   guestName       String
   guestEmail      String
   guestPhone      String
+  roomType        String?
   adults          Int       @default(1)
   children        Int       @default(0)
   checkIn         DateTime
