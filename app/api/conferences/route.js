@@ -3,6 +3,7 @@ import { append, getAll } from '@/lib/store'
 import { sendConferenceConfirmation } from '@/lib/email'
 import { requireRole } from '@/lib/auth'
 import { rateLimit, getClientIp } from '@/lib/rateLimit'
+import { sanitize, assertSafe } from '@/lib/sanitize'
 
 // Rate-limiter: max 5 enquiries per IP per 15 minutes
 const conferenceLimiter = rateLimit({ limit: 5, windowMs: 15 * 60_000 })
@@ -48,6 +49,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // ── Injection / XSS detection ───────────────────────────────────
+    try {
+      assertSafe(organizerName, 'organizer name')
+      assertSafe(organization,  'organization')
+      assertSafe(cateringNotes, 'catering notes')
+      assertSafe(specialNeeds,  'special needs')
+    } catch {
+      return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
+    }
+
     if (typeof organizerName !== 'string' || organizerName.trim().length < 2 || organizerName.trim().length > 100) {
       return NextResponse.json({ error: 'Organizer name must be 2–100 characters' }, { status: 400 })
     }
@@ -87,10 +98,10 @@ export async function POST(request) {
     const booking = {
       id:             crypto.randomUUID(),
       ref:            'CONF-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
-      organizerName:  organizerName.trim().slice(0, 100),
+      organizerName:  sanitize(organizerName, 100, 'organizer name'),
       email:          email.toLowerCase().trim().slice(0, 254),
       phone:          phone.trim().slice(0, 20),
-      organization:   organization   ? String(organization).trim().slice(0, 200)   : '',
+      organization:   organization   ? sanitize(organization, 200, 'organization')     : '',
       eventType,
       hallSize:       hallSize       ? String(hallSize).trim().slice(0, 100)       : '',
       attendees:      parsedAttendees,
@@ -98,9 +109,9 @@ export async function POST(request) {
       startTime:      startTime      ? String(startTime).trim().slice(0, 10)       : '',
       endTime:        endTime        ? String(endTime).trim().slice(0, 10)         : '',
       cateringNeeded: Boolean(cateringNeeded),
-      cateringNotes:  cateringNotes  ? String(cateringNotes).trim().slice(0, 500)  : '',
+      cateringNotes:  cateringNotes  ? sanitize(cateringNotes, 500, 'catering notes') : '',
       equipment:      safeEquipment,
-      specialNeeds:   specialNeeds   ? String(specialNeeds).trim().slice(0, 500)   : '',
+      specialNeeds:   specialNeeds   ? sanitize(specialNeeds, 500, 'special needs')   : '',
       status:         'ENQUIRY',
       createdAt:      new Date().toISOString(),
     }

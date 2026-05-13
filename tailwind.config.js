@@ -127,4 +127,9 @@ module.exports = {
     },
   },
   plugins: [],
+
+  // motion-safe: and motion-reduce: variants are built into Tailwind v3.
+  // Use them on animations: e.g. `motion-safe:animate-float` so users who
+  // have "prefers-reduced-motion: reduce" set don't see distracting movement.
+  // No extra config needed — this comment is a reminder to use those prefixes.
 }

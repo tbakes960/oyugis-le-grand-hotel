@@ -13,7 +13,6 @@
  *   public/images/food/*.jpg         — 31 food & beverage photos
  */
 
-import { GoogleGenAI } from '@google/genai'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -22,16 +21,9 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.join(__dirname, '..')
 
-const apiKey = process.env.GEMINI_API_KEY
-if (!apiKey) {
-  console.error('\nERROR: GEMINI_API_KEY is not set.')
-  console.error('  Get a free key from https://aistudio.google.com/apikey')
-  console.error('  Then run:  GEMINI_API_KEY=your_key node scripts/generate-images.js\n')
-  process.exit(1)
-}
-
-const ai = new GoogleGenAI({ apiKey })
-const MODEL = 'gemini-3.1-flash-image-preview'
+// Uses Pollinations.ai — free, no API key required
+// https://pollinations.ai
+const POLLINATIONS_URL = 'https://image.pollinations.ai/prompt'
 
 // ── Image Definitions ─────────────────────────────────────────────────────────
 
@@ -195,22 +187,41 @@ const FOOD_IMAGES = [
   },
 ]
 
+const TOUR_IMAGES = [
+  {
+    filename: 'lobby.jpg',
+    prompt: 'Grand luxury hotel lobby interior — high ceilings with elegant chandeliers, polished marble floors, a grand reception desk, fresh flower arrangements, comfortable seating areas. Warm golden lighting, opulent African-inspired decor. Professional architectural interior photography, wide angle.',
+  },
+  {
+    filename: 'deluxe-room.jpg',
+    prompt: 'Luxury hotel deluxe room interior — king-size bed with crisp white linens and decorative pillows, elegant wooden furniture, large windows with flowing curtains showing a garden view. Bedside lamps casting warm light, African art on the walls, plush carpet. Professional hotel room photography.',
+  },
+  {
+    filename: 'restaurant.jpg',
+    prompt: 'Elegant hotel restaurant dining room interior — neatly set round tables with white tablecloths and gold cutlery, comfortable upholstered chairs, warm ambient lighting from pendant lamps, open kitchen visible in background, large windows. Professional restaurant interior photography.',
+  },
+  {
+    filename: 'conference.jpg',
+    prompt: 'Modern hotel conference hall — long boardroom table with leather chairs, projector screen at the front, professional lighting, podium microphone, water pitchers on table, carpeted floor, acoustic ceiling panels. State-of-the-art business meeting room. Professional architectural photography.',
+  },
+  {
+    filename: 'pool.jpg',
+    prompt: 'Outdoor hotel swimming pool area — clear blue rectangular pool with lane markers, surrounded by palm trees and tropical plants, sun loungers with white cushions arranged around the pool, a small pool bar in the background, bright sunny tropical day. Professional resort photography.',
+  },
+]
+
 // ── Generator ─────────────────────────────────────────────────────────────────
 
-async function generateImage(prompt, outputPath) {
-  const response = await ai.models.generateContent({
-    model: MODEL,
-    contents: prompt,
-  })
+async function generateImage(prompt, outputPath, seed) {
+  const encoded = encodeURIComponent(prompt)
+  const url = `${POLLINATIONS_URL}/${encoded}?width=800&height=600&seed=${seed}&model=flux&nologo=true`
 
-  for (const part of response.candidates[0].content.parts) {
-    if (part.inlineData) {
-      const buffer = Buffer.from(part.inlineData.data, 'base64')
-      fs.writeFileSync(outputPath, buffer)
-      return true
-    }
-  }
-  return false
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`)
+
+  const buffer = Buffer.from(await res.arrayBuffer())
+  fs.writeFileSync(outputPath, buffer)
+  return true
 }
 
 function sleep(ms) {
@@ -220,21 +231,25 @@ function sleep(ms) {
 async function run() {
   const expDir  = path.join(ROOT, 'public', 'images', 'experiences')
   const foodDir = path.join(ROOT, 'public', 'images', 'food')
+  const tourDir = path.join(ROOT, 'public', 'images', 'tour')
   fs.mkdirSync(expDir, { recursive: true })
   fs.mkdirSync(foodDir, { recursive: true })
+  fs.mkdirSync(tourDir, { recursive: true })
 
   const all = [
-    ...EXPERIENCE_IMAGES.map(img => ({ ...img, dir: expDir, group: 'Experience' })),
-    ...FOOD_IMAGES.map(img => ({ ...img, dir: foodDir, group: 'Food' })),
+    ...EXPERIENCE_IMAGES.map(img => ({ ...img, dir: expDir,  group: 'Experience' })),
+    ...FOOD_IMAGES.map(img =>       ({ ...img, dir: foodDir, group: 'Food' })),
+    ...TOUR_IMAGES.map(img =>       ({ ...img, dir: tourDir, group: 'Tour' })),
   ]
 
   const total = all.length
   let done = 0
   let failed = []
 
-  console.log(`\nGenerating ${total} images using Gemini (Nano Banana)...\n`)
+  console.log(`\nGenerating ${total} images using Pollinations.ai (free, no key needed)...\n`)
 
-  for (const img of all) {
+  for (let i = 0; i < all.length; i++) {
+    const img = all[i]
     const outPath = path.join(img.dir, img.filename)
 
     // Skip if already generated
@@ -246,7 +261,7 @@ async function run() {
 
     process.stdout.write(`  → ${img.group}: ${img.filename} ... `)
     try {
-      const ok = await generateImage(img.prompt, outPath)
+      const ok = await generateImage(img.prompt, outPath, i + 1)
       if (ok) {
         console.log('✓ saved')
         done++
@@ -259,12 +274,12 @@ async function run() {
       failed.push(img.filename)
     }
 
-    // 4-second delay to stay within the free-tier rate limit (15 req/min)
-    if (done < total) await sleep(4000)
+    // Small delay between requests to be polite to the free service
+    if (i < all.length - 1) await sleep(1000)
   }
 
   console.log(`\n─────────────────────────────────────────`)
-  console.log(`Done: ${done}/${total} images generated.`)
+  console.log(`Done: ${done}/${total} images generated via Pollinations.ai`)
   if (failed.length > 0) {
     console.log(`Failed (${failed.length}): ${failed.join(', ')}`)
     console.log('Re-run the script to retry failed images.')

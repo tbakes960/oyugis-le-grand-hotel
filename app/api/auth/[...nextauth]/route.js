@@ -3,6 +3,10 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import bcrypt from 'bcryptjs'
+import { rateLimit, getClientIp } from '@/lib/rateLimit'
+
+// 5 login attempts per IP per 15 minutes
+const loginLimiter = rateLimit({ limit: 5, windowMs: 15 * 60 * 1000 })
 
 /**
  * Reads account credentials from data/accounts.json.
@@ -67,7 +71,7 @@ export const authOptions = {
     }),
   ],
 
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt', maxAge: 8 * 60 * 60 },
 
   callbacks: {
     async jwt({ token, user }) {
@@ -96,4 +100,19 @@ export const authOptions = {
 
 const handler = NextAuth(authOptions)
 
-export { handler as GET, handler as POST }
+export const GET = handler
+
+export async function POST(request) {
+  const { pathname } = new URL(request.url)
+  // Only rate-limit the credentials sign-in endpoint
+  if (pathname.endsWith('/callback/credentials') || pathname.endsWith('/signin')) {
+    const ip = getClientIp(request)
+    if (!loginLimiter.check(ip)) {
+      return Response.json(
+        { error: 'Too many login attempts. Please wait 15 minutes before trying again.' },
+        { status: 429 }
+      )
+    }
+  }
+  return handler(request)
+}

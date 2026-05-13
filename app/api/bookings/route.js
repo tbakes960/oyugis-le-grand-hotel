@@ -3,6 +3,7 @@ import { append, getAll } from '@/lib/store'
 import { sendBookingConfirmation } from '@/lib/email'
 import { requireRole } from '@/lib/auth'
 import { rateLimit, getClientIp } from '@/lib/rateLimit'
+import { sanitize, assertSafe } from '@/lib/sanitize'
 
 /** Generate a short, readable booking reference like LG-A3F9K2 */
 function generateRef() {
@@ -51,6 +52,15 @@ export async function POST(request) {
     // ── Required field presence ─────────────────────────────────────
     if (!guestName || !guestEmail || !guestPhone || !roomType || !checkIn || !checkOut) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    }
+
+    // ── Injection / XSS detection ───────────────────────────────────
+    try {
+      assertSafe(guestName,       'name')
+      assertSafe(specialRequests, 'special requests')
+      assertSafe(mpesaPhone,      'phone')
+    } catch {
+      return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
     }
 
     // ── Format / type validation ─────────────────────────────────────
@@ -108,7 +118,7 @@ export async function POST(request) {
     const booking = {
       id:              crypto.randomUUID(),
       bookingRef:      generateRef(),
-      guestName:       guestName.trim().slice(0, 100),
+      guestName:       sanitize(guestName, 100, 'name'),
       guestEmail:      guestEmail.toLowerCase().trim().slice(0, 254),
       guestPhone:      guestPhone.trim().slice(0, 20),
       roomType,
@@ -120,7 +130,7 @@ export async function POST(request) {
       totalAmount:     parsedAmount,
       paymentMethod:   parsedPayment,
       mpesaPhone:      mpesaPhone   ? mpesaPhone.trim().slice(0, 20)  : '',
-      specialRequests: specialRequests ? specialRequests.trim().slice(0, 500) : '',
+      specialRequests: specialRequests ? sanitize(specialRequests, 500, 'special requests') : '',
       status:          'PENDING',
       paymentStatus:   'PENDING',
       createdAt:       new Date().toISOString(),

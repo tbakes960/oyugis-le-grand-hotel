@@ -19,6 +19,20 @@ import { findWhere, updateById } from '@/lib/store'
 const MPESA_SUCCESS_CODE = 0
 
 export async function POST(request) {
+  // Enforce shared secret — MPESA_CALLBACK_SECRET must be configured.
+  // Set MPESA_CALLBACK_URL=https://yourdomain.com/api/payments/mpesa/callback?secret=YOUR_SECRET
+  const expectedSecret = process.env.MPESA_CALLBACK_SECRET
+  if (!expectedSecret || expectedSecret === 'REPLACE_WITH_RANDOM_32_CHAR_STRING') {
+    console.error('[mpesa/callback] MPESA_CALLBACK_SECRET not configured — rejecting all callbacks')
+    return NextResponse.json({ ResultCode: 1, ResultDesc: 'Rejected' }, { status: 503 })
+  }
+  const { searchParams } = new URL(request.url)
+  const providedSecret = searchParams.get('secret')
+  if (!providedSecret || providedSecret !== expectedSecret) {
+    console.warn('[mpesa/callback] Rejected callback — invalid or missing secret')
+    return NextResponse.json({ ResultCode: 1, ResultDesc: 'Rejected' }, { status: 401 })
+  }
+
   try {
     let body
     try {

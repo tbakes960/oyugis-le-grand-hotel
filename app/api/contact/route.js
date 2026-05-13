@@ -3,6 +3,7 @@ import { append, getAll } from '@/lib/store'
 import { sendContactAcknowledgement } from '@/lib/email'
 import { requireRole } from '@/lib/auth'
 import { rateLimit, getClientIp } from '@/lib/rateLimit'
+import { sanitize, assertSafe } from '@/lib/sanitize'
 
 // Rate-limiter: max 5 messages per IP per 15 minutes
 const contactLimiter = rateLimit({ limit: 5, windowMs: 15 * 60_000 })
@@ -33,6 +34,15 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // ── Injection / XSS detection ───────────────────────────────────
+    try {
+      assertSafe(name,    'name')
+      assertSafe(subject, 'subject')
+      assertSafe(message, 'message')
+    } catch {
+      return NextResponse.json({ error: 'Invalid input detected' }, { status: 400 })
+    }
+
     if (typeof name !== 'string' || name.trim().length < 2 || name.trim().length > 100) {
       return NextResponse.json({ error: 'Name must be 2–100 characters' }, { status: 400 })
     }
@@ -51,11 +61,11 @@ export async function POST(request) {
 
     const entry = {
       id:        crypto.randomUUID(),
-      name:      name.trim().slice(0, 100),
+      name:      sanitize(name, 100, 'name'),
       email:     email.toLowerCase().trim().slice(0, 254),
       phone:     phone ? String(phone).trim().slice(0, 20) : '',
-      subject:   subject.trim().slice(0, 200),
-      message:   message.trim().slice(0, 2000),
+      subject:   sanitize(subject, 200, 'subject'),
+      message:   sanitize(message, 2000, 'message'),
       isRead:    false,
       createdAt: new Date().toISOString(),
     }

@@ -1,53 +1,45 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Eye, Info } from 'lucide-react'
-
-// 360° Virtual Tour using iframe embeds or pannellum viewer
-// REPLACE: Add your real 360° photo equirectangular images under public/360/
-// Each image should be a 2:1 equirectangular JPG (e.g. 4096×2048px)
+import { motion, AnimatePresence } from 'framer-motion'
+import { Eye, X, ZoomIn, Info } from 'lucide-react'
 
 const TOUR_SCENES = [
   {
     id: 'lobby',
     name: 'Hotel Lobby',
     desc: 'Welcome to the grand entrance of Oyugis Le Grand Hotel',
-    /* REPLACE: panorama: '/360/lobby.jpg' */
-    color: 'from-hotel-dark to-sky-800',
+    image: '/images/tour/lobby.jpg',
   },
   {
     id: 'deluxe-room',
     name: 'Deluxe Room',
     desc: 'Our elegantly furnished Deluxe Room with balcony view',
-    /* REPLACE: panorama: '/360/deluxe-room.jpg' */
-    color: 'from-sky-800 to-sky-600',
+    image: '/images/tour/deluxe-room.jpg',
   },
   {
     id: 'restaurant',
     name: 'Restaurant',
     desc: 'Experience fine dining in our spacious restaurant',
-    /* REPLACE: panorama: '/360/restaurant.jpg' */
-    color: 'from-brown-700 to-brown-500',
+    image: '/images/tour/restaurant.jpg',
   },
   {
     id: 'conference',
     name: 'Conference Hall',
     desc: 'State-of-the-art conference facilities for your events',
-    /* REPLACE: panorama: '/360/conference.jpg' */
-    color: 'from-sky-900 to-hotel-dark',
+    image: '/images/tour/conference.jpg',
   },
   {
     id: 'pool',
     name: 'Swimming Pool',
     desc: 'Relax and unwind at our outdoor swimming pool',
-    /* REPLACE: panorama: '/360/pool.jpg' */
-    color: 'from-sky-700 to-sky-500',
+    image: '/images/tour/pool.jpg',
   },
 ]
 
 export default function VirtualTourPage() {
   const [activeScene, setActiveScene] = useState(TOUR_SCENES[0])
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   return (
     <>
@@ -56,7 +48,7 @@ export default function VirtualTourPage() {
         <div className="page-hero-overlay" />
         <div className="page-hero-content">
           <p className="text-xs tracking-[0.2em] uppercase text-gold-400 mb-2">Oyugis Le Grand Hotel</p>
-          <h1 className="font-heading text-4xl md:text-5xl font-bold text-white">360° Virtual Tour</h1>
+          <h1 className="font-heading text-4xl md:text-5xl font-bold text-white">Virtual Tour</h1>
           <p className="text-white/70 mt-3 text-sm">Explore our hotel from the comfort of your screen</p>
         </div>
       </div>
@@ -82,42 +74,91 @@ export default function VirtualTourPage() {
             ))}
           </div>
 
-          {/* Viewer */}
+          {/* Main Viewer */}
           <motion.div
             key={activeScene.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4 }}
-            className="relative rounded-xl overflow-hidden shadow-xl"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35 }}
+            className="relative rounded-xl overflow-hidden shadow-xl cursor-zoom-in group"
             style={{ height: '520px' }}
+            onClick={() => setLightboxOpen(true)}
           >
-            <div className={`w-full h-full bg-gradient-to-br ${activeScene.color} flex flex-col items-center justify-center gap-4`}>
-              <div className="w-20 h-20 rounded-full border-4 border-white/20 flex items-center justify-center">
-                <Eye size={36} className="text-white/50" />
+            <img
+              src={activeScene.image}
+              alt={activeScene.name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <div className="bg-white/20 backdrop-blur-sm rounded-full p-4">
+                <ZoomIn size={28} className="text-white" />
               </div>
-              <div className="text-center">
-                <p className="text-white font-heading text-xl font-semibold mb-2">{activeScene.name}</p>
-                <p className="text-white/50 text-sm max-w-xs">360° panoramic view coming soon</p>
-              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+              <p className="text-white font-heading text-xl font-semibold">{activeScene.name}</p>
             </div>
           </motion.div>
 
           <p className="text-center text-hotel-muted text-sm mt-4 flex items-center justify-center gap-2">
             <Info size={14} />
-            {activeScene.desc}
+            {activeScene.desc} — click the image to view full screen
           </p>
 
-          {/* Coming soon notice for visitors */}
-          <div className="mt-10 bg-hotel-dark/5 border border-hotel-dark/10 rounded-lg p-6 max-w-xl mx-auto text-center">
-            <p className="font-heading text-hotel-dark font-semibold mb-1">360° Tour Coming Soon</p>
-            <p className="text-sm text-hotel-muted">
-              Our immersive virtual tour is being prepared. In the meantime, browse our{' '}
-              <a href="/gallery" className="text-sky-400 hover:underline">Photo Gallery</a> or{' '}
-              <a href="/contact" className="text-sky-400 hover:underline">contact us</a> to arrange a visit.
-            </p>
+          {/* Thumbnail Strip */}
+          <div className="mt-8 grid grid-cols-5 gap-3">
+            {TOUR_SCENES.map(scene => (
+              <button
+                key={scene.id}
+                onClick={() => setActiveScene(scene)}
+                className={`relative rounded-lg overflow-hidden h-20 transition-all duration-200 ${
+                  activeScene.id === scene.id
+                    ? 'ring-2 ring-sky-400 ring-offset-2'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
+              >
+                <img
+                  src={scene.image}
+                  alt={scene.name}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/30 flex items-end p-1.5">
+                  <span className="text-white text-[10px] font-semibold leading-tight">{scene.name}</span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </section>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors"
+              onClick={() => setLightboxOpen(false)}
+            >
+              <X size={32} />
+            </button>
+            <motion.img
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              src={activeScene.image}
+              alt={activeScene.name}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={e => e.stopPropagation()}
+            />
+            <p className="absolute bottom-6 text-white/70 text-sm font-heading">{activeScene.name}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }
