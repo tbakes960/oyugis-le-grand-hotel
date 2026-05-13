@@ -63,7 +63,7 @@ const nextConfig = {
   },
 
   experimental: {
-    serverComponentsExternalPackages: ['bcryptjs'],
+    serverComponentsExternalPackages: ['bcryptjs', '@prisma/client', 'prisma'],
   },
 
   // Limit request body size (protects against payload-bomb DoS)
